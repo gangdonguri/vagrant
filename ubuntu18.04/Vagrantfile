@@ -1,0 +1,52 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+$script = <<-'SCRIPT'
+sudo localedef -v -c -i ko_KR -f UTF-8 ko_KR.UTF-8
+sudo localectl set-locale LANG=ko_KR.utf8
+sudo timedatectl set-timezone Asia/Seoul
+sudo /sbin/setenforce 0
+sudo sed -i 's/enforcing/disabled/g' /etc/selinux/config
+sudo /bin/mv -f /home/vagrant/ntp.conf /etc/ntp.conf
+sudo /bin/mv -f /home/vagrant/resolv.conf /etc/resolv.conf
+sudo systemctl enable --now ntpd
+SCRIPT
+
+Vagrant.configure("2") do |config|
+
+  # Define base image
+  config.vm.box = "generic/ubuntu1804"
+
+  # ubuntu-Server
+  config.vm.define "ubuntu-server" do |ubuntu_server|
+    ubuntu_server.vm.hostname = "ubuntu-server"
+
+    # Virtualbox Virtualization
+    ubuntu_server.vm.provider "virtualbox" do |vb|
+      vb.name = "ubuntu_server"
+      vb.memory = 4096
+      vb.cpus =  2
+    end
+
+    # Provisioning
+    ubuntu_server.vm.provision "shell", path: "bootstrap.sh", run: "once"
+    ubuntu_server.vm.provision "file", source: "./.vimrc", destination: "/home/vagrant/.vimrc"
+    ubuntu_server.vm.provision "file", source: "./ntp.conf", destination: "/home/vagrant/ntp.conf"
+    ubuntu_server.vm.provision "file", source: "./resolv.conf", destination: "/home/vagrant/resolv.conf"
+    ubuntu_server.vm.provision "file", source: "./student.pem", destination: "/home/vagrant/student.pem"
+    ubuntu_server.vm.provision "shell", 
+      inline: $script, run: "once"
+    
+    # Network
+    ubuntu_server.vm.network "forwarded_port", guest: 80, host: 80
+    ubuntu_server.vm.network "forwarded_port", guest: 443, host: 443
+    ubuntu_server.vm.network "forwarded_port", guest: 8080, host: 8080
+    ubuntu_server.vm.network "public_network", ip: "192.168.0.10"
+    ubuntu_server.vm.network "private_network", ip: "192.168.10.10"
+  end
+end
+
