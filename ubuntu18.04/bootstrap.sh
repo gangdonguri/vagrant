@@ -11,4 +11,6 @@ apt install ntp -y
 apt install psmisc -y
 apt install lsof -y
 apt install tcpdump -y
-apt install selinux-utils
+apt install git -y
+apt install nginx -y
+apt install npm -y
